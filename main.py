@@ -56,7 +56,7 @@ if args.task_name == 'oversampling':
                         bs=args.diffuser_bs)
 
     ''' controller training '''
-    diffuser = torch.load(os.path.join(save_dir, 'diffuser.pt'))
+    diffuser = torch.load(os.path.join(save_dir, 'diffuser.pt'), weights_only=False)
     label = config['label']
     n_classes = len(pd.unique(train_data[label]))
     train_x = data_wrapper.transform(train_data)
@@ -75,8 +75,8 @@ if args.task_name == 'oversampling':
                         bs=args.controller_bs)
 
     ''' oversampling '''
-    diffuser = torch.load(os.path.join(save_dir, 'diffuser.pt'))
-    controller = torch.load(os.path.join(save_dir, 'controller.pt'))
+    diffuser = torch.load(os.path.join(save_dir, 'diffuser.pt'), weights_only=False)
+    controller = torch.load(os.path.join(save_dir, 'controller.pt'), weights_only=False)
     sample_data = []
     for i in range(len(config['minority_classes'])):
         samples = lo.oversampling(config['n_samples'][i], controller, diffuser, config['minority_classes'][i], device, n_classes, args.scale_factor)
@@ -115,7 +115,7 @@ elif args.task_name == 'completion':
         ''' controller training '''
         if 'cardio' in incomplete_tables:
             print('Train controller for cardio')
-            diffuser = torch.load(os.path.join(save_dir, 'diffuser_cardio.pt'))
+            diffuser = torch.load(os.path.join(save_dir, 'diffuser_cardio.pt'), weights_only=False)
             condition_wrapper = [schema.patient_wrapper]
             synthetic_wrapper = [schema.cardio_wrapper]
             raw_train_data = schema.joined_data.drop(['pid'], axis=1)
@@ -131,8 +131,8 @@ elif args.task_name == 'completion':
             synthetic_wrapper = [schema.cardio_wrapper]
             cond_data = schema.cond_patient 
 
-            diffuser = torch.load(os.path.join(save_dir, 'diffuser_cardio.pt'))
-            controller = torch.load(os.path.join(save_dir, 'controller_patient->cardio.pt'))
+            diffuser = torch.load(os.path.join(save_dir, 'diffuser_cardio.pt'), weights_only=False)
+            controller = torch.load(os.path.join(save_dir, 'controller_patient->cardio.pt'), weights_only=False)
 
             cond_data, sample_data = lc.table_condition_sample(condition_wrapper, synthetic_wrapper, cond_data, diffuser, controller, device=device, scale_factor=25)
             sample_data = pd.concat((cond_data, sample_data), axis=1)
@@ -181,14 +181,14 @@ elif args.task_name == 'completion':
         print('Tune diffuser for landlord')
         train_data = pd.concat((schema.joined_data[schema.join_landlord.columns], schema.cond_landlord), axis=0)
         train_x = schema.landlord_wrapper.transform(train_data)
-        diffuser = torch.load(os.path.join(save_dir, f'diffuser_landlord.pt'))
+        diffuser = torch.load(os.path.join(save_dir, f'diffuser_landlord.pt'), weights_only=False)
         save_path = os.path.join(save_dir, f'diffuser_landlord_tuned.pt')
         lc.diffuser_tuning(train_x, diffuser, save_path, device, epochs=3000)
 
         ''' controller training '''
         if len(schema.cond_neighborhoods) >= len(schema.cond_landlord) and len(schema.cond_neighborhoods) > 0:
             print('Train controller neighborhoods->apartment')
-            diffuser = torch.load(os.path.join(save_dir, 'diffuser_apartment.pt'))
+            diffuser = torch.load(os.path.join(save_dir, 'diffuser_apartment.pt'), weights_only=False)
             condition_wrapper = [schema.neighborhoods_wrapper]
             synthetic_wrapper = [schema.apartment_wrapper]
             raw_train_data = schema.joined_data.copy()
@@ -197,7 +197,7 @@ elif args.task_name == 'completion':
 
             if len(schema.cond_apartment) == 0 and len(schema.cond_apartment_neighborhoods) == 0:
                 print('Train controller neighborhoods_apartment->landlord')
-                diffuser = torch.load(os.path.join(save_dir, 'diffuser_landlord_tuned.pt'))
+                diffuser = torch.load(os.path.join(save_dir, 'diffuser_landlord_tuned.pt'), weights_only=False)
                 condition_wrapper = [schema.neighborhoods_wrapper, schema.apartment_wrapper]
                 synthetic_wrapper = [schema.landlord_wrapper]
                 raw_train_data = schema.joined_data.copy()
@@ -213,16 +213,16 @@ elif args.task_name == 'completion':
             condition_wrapper = [schema.neighborhoods_wrapper]
             synthetic_wrapper = [schema.apartment_wrapper]
             cond_data = schema.cond_neighborhoods
-            diffuser = torch.load(os.path.join(save_dir, 'diffuser_apartment.pt'))
-            controller = torch.load(os.path.join(save_dir, 'controller_neighborhoods->apartment.pt'))
+            diffuser = torch.load(os.path.join(save_dir, 'diffuser_apartment.pt'), weights_only=False)
+            controller = torch.load(os.path.join(save_dir, 'controller_neighborhoods->apartment.pt'), weights_only=False)
             cond_data, sample_data = lc.table_condition_sample(condition_wrapper, synthetic_wrapper, cond_data, diffuser, controller, device=device, scale_factor=30)
             
             print('Generate landlord ..')
             condition_wrapper = [schema.neighborhoods_wrapper, schema.apartment_wrapper]
             synthetic_wrapper = [schema.landlord_wrapper]
             cond_data = pd.concat((cond_data, sample_data), axis=1)
-            diffuser = torch.load(os.path.join(save_dir, f'diffuser_landlord_tuned.pt'))                                           
-            controller = torch.load(os.path.join(save_dir, f'controller_neighborhoods_apartment->landlord.pt'))
+            diffuser = torch.load(os.path.join(save_dir, f'diffuser_landlord_tuned.pt'), weights_only=False)
+            controller = torch.load(os.path.join(save_dir, f'controller_neighborhoods_apartment->landlord.pt'), weights_only=False)
             cond_data, sample_data = lc.table_condition_sample(condition_wrapper, synthetic_wrapper, cond_data, diffuser, controller, device=device, scale_factor=20)
 
             sample_data = pd.concat((cond_data, sample_data), axis=1)
@@ -256,20 +256,20 @@ elif args.task_name == 'completion':
         print('Tune diffuser for movie_actor')
         train_data = pd.concat((schema.ma_joined_data[schema.join_movie.columns], schema.ma_cond_movie), axis=0)
         train_x = schema.movie_wrapper.transform(train_data)
-        diffuser = torch.load(os.path.join(save_dir, f'diffuser_movie.pt'))
+        diffuser = torch.load(os.path.join(save_dir, f'diffuser_movie.pt'), weights_only=False)
         save_path = os.path.join(save_dir, f'diffuser_movie_tuned_ma.pt')
         lc.diffuser_tuning(train_x, diffuser, save_path, device, epochs=3000)
 
         print('Tune diffuser for movie_director')
         train_data = pd.concat((schema.md_joined_data[schema.join_movie.columns], schema.md_cond_movie), axis=0)
         train_x = schema.movie_wrapper.transform(train_data)
-        diffuser = torch.load(os.path.join(save_dir, f'diffuser_movie.pt'))
+        diffuser = torch.load(os.path.join(save_dir, f'diffuser_movie.pt'), weights_only=False)
         save_path = os.path.join(save_dir, f'diffuser_movie_tuned_md.pt')
         lc.diffuser_tuning(train_x, diffuser, save_path, device, epochs=3000)
 
         ''' controller training '''
         print('Train controller actor->movie')
-        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_ma.pt'))
+        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_ma.pt'), weights_only=False)
         condition_wrapper = [schema.actor_wrapper]
         synthetic_wrapper = [schema.movie_wrapper]
         raw_train_data = schema.ma_joined_data.copy()
@@ -277,7 +277,7 @@ elif args.task_name == 'completion':
         lc.controller_training(raw_train_data, condition_wrapper, synthetic_wrapper, diffuser, save_path, device=device, batch_size=4096, steps=2000)  
 
         print('Train controller director->movie')
-        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_md.pt'))
+        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_md.pt'), weights_only=False)
         condition_wrapper = [schema.director_wrapper]
         synthetic_wrapper = [schema.movie_wrapper]
         raw_train_data = schema.md_joined_data.copy()
@@ -295,8 +295,8 @@ elif args.task_name == 'completion':
         condition_wrapper = [schema.actor_wrapper]
         synthetic_wrapper = [schema.movie_wrapper]
         cond_data = schema.cond_actor
-        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_ma.pt'))
-        controller = torch.load(os.path.join(save_dir, 'controller_actor->movie.pt'))
+        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_ma.pt'), weights_only=False)
+        controller = torch.load(os.path.join(save_dir, 'controller_actor->movie.pt'), weights_only=False)
         cond_data, sample_data = lc.table_condition_sample(condition_wrapper, synthetic_wrapper, cond_data, diffuser, controller, device=device, scale_factor=35)
         sample_data = pd.concat((cond_data, sample_data), axis=1)
         sample_data = sample_data[ma_complete_data.columns]
@@ -307,8 +307,8 @@ elif args.task_name == 'completion':
         condition_wrapper = [schema.director_wrapper]
         synthetic_wrapper = [schema.movie_wrapper]
         cond_data = schema.cond_director
-        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_md.pt'))
-        controller = torch.load(os.path.join(save_dir, 'controller_director->movie.pt'))
+        diffuser = torch.load(os.path.join(save_dir, 'diffuser_movie_tuned_md.pt'), weights_only=False)
+        controller = torch.load(os.path.join(save_dir, 'controller_director->movie.pt'), weights_only=False)
         cond_data, sample_data = lc.table_condition_sample(condition_wrapper, synthetic_wrapper, cond_data, diffuser, controller, device=device, scale_factor=20)
         sample_data = pd.concat((cond_data, sample_data), axis=1)
         sample_data = sample_data[md_complete_data.columns]
